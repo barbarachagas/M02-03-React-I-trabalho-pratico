@@ -620,3 +620,51 @@ const backend = {
     },
   ],
 };
+
+function apiGetInvestments() {
+  const { investments, reports } = backend;
+  let result = investments
+    .sort((a, b) => {
+      a.description.localeCompare(b.description);
+    })
+    .map((investment) => {
+      return {
+        ...investment,
+        reports: reports
+          .filter((report) => {
+            return investment.id === report.investmentId;
+          })
+          .sort((a, b) => a.month - b.month),
+      };
+    });
+
+  result = result.map((item) => {
+    return {
+      ...item,
+      reports: item.reports.map((report, index, currentReports) => {
+        if (index === 0) {
+          return { ...report, percent: 0 };
+        }
+
+        const currentValue = report.value;
+        const lastValue = currentReports[index - 1].value;
+
+        const percent = (currentValue / lastValue - 1) * 100;
+        return { ...report, percent };
+      }),
+    };
+  });
+
+  result = result.map((item) => {
+    const { reports } = item;
+    const firstValue = reports[0].value;
+    const lastValue = reports[reports.length - 1].value;
+    const totalPercent = (lastValue / firstValue - 1) * 100;
+
+    return { ...item, totalPercent, totalValue: lastValue - firstValue };
+  });
+
+  return result;
+}
+
+export { backend, apiGetInvestments };
